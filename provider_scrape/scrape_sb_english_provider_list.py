@@ -1,32 +1,31 @@
-from pathlib import Path
+from io import TextIOWrapper
+from datetime import datetime
+
 import requests
 import fitz
 
-# Scraping directory URL
-provider_directory_url = "http://countyofsb.org/behavioral-wellness/asset.c/6074"
-response = requests.get(provider_directory_url)
 
-# Saving scraped data as PDF
-provider_directory_document = Path("./current_english_directory.pdf")
-provider_directory_document.write_bytes(response.content)
+def format_pdf_time(date_string: str) -> datetime:
+    return datetime.strptime(date_string, "%Y%m%d%H%M%S")
 
-# Opening scraped data and turning into string
-current_directory_pdf = fitz.open("./current_english_directory.pdf")
-current_directory_pdf_cat = ""
 
-for page in current_directory_pdf:
-    text = page.getText()
-    current_directory_pdf_cat += text
+provider_directory_url: str = "http://countyofsb.org/behavioral-wellness/asset.c/6074"
+response: bytes = requests.get(provider_directory_url).content
+fetched_directory_pdf: fitz.Document = fitz.open("pdf", response)
 
-# Comparing newly scraped PDF with previously scraped PDF
-previous_directory_pdf = fitz.open("./previous_english_directory.pdf")
-previous_directory_pdf_cat = ""
+fetched_mod_date_string: str = fetched_directory_pdf.metadata["modDate"][2:-7]
+fetched_mod_date_datetime_object: datetime = format_pdf_time(
+    fetched_mod_date_string)
 
-for page in previous_directory_pdf:
-    text = page.getText()
-    previous_directory_pdf_cat += text
+saved_mod_date_file: TextIOWrapper = open("./last_mod_date.txt")
+saved_mod_date_datetime_object: datetime = format_pdf_time(
+    saved_mod_date_file.read())
 
-if(current_directory_pdf_cat != previous_directory_pdf_cat):
-    print("no!")
+fetched_directory_is_newer: bool = fetched_mod_date_datetime_object > saved_mod_date_datetime_object
+
+if(fetched_directory_is_newer):
+    print("was modified")
+    saved_mod_date_file: TextIOWrapper = open("./last_mod_date.txt", "w")
+    saved_mod_date_file.write(fetched_mod_date_string)
 else:
-    print("yes!")
+    print("not modified")
