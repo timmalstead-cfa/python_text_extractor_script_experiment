@@ -13,10 +13,6 @@ provider_directory_url: str = "http://countyofsb.org/behavioral-wellness/asset.c
 response: bytes = requests.get(provider_directory_url).content
 fetched_directory_pdf: fitz.Document = fitz.open("pdf", response)
 
-# html_to_save = fetched_directory_pdf[4].getText("words")
-# html_file = open("./example.txt", "w")
-# html_file.write(str(html_to_save))
-
 fetched_mod_date_string: str = fetched_directory_pdf.metadata["modDate"][2:-7]
 fetched_mod_date_datetime_object: datetime = format_pdf_time(
     fetched_mod_date_string)
