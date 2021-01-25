@@ -34,16 +34,19 @@ for page in pdf:
             location_object: Dict = {}
             for string in location_info:
                 try:
-                    first_word: str = string.split()[0]
-                    number: int = int(first_word)
-                    address_index: int = location_info.index(string)
-                    location_arr: List[str] = location_info[0:address_index]
-                    location_string: str = reduce(
-                        lambda first_string, next_string: first_string+next_string, location_arr)
-                    location_object["location_name"] = location_string.strip()
-                    location_object["address"] = location_info[address_index].strip(
-                    )
-                    break
+                    if(string.upper().startswith("PO Box")):
+                        location_object["address"] = string
+                    else:
+                        first_word: str = string.split()[0]
+                        number: int = int(first_word)
+                        address_index: int = location_info.index(string)
+                        location_arr: List[str] = location_info[0:address_index]
+                        location_string: str = reduce(
+                            lambda first_string, next_string: first_string+next_string, location_arr)
+                        location_object["location_name"] = location_string.strip()
+                        location_object["address"] = location_info[address_index].strip(
+                        )
+                        break
                 except:
                     continue
             for string in location_info:
@@ -58,7 +61,6 @@ for page in pdf:
                     else:
                         phone_fax_arr: List[str] = phone_fax_info.split(":")
                         location_object["phone"] = phone_fax_arr[1].strip()
-                        # string.lower().startswith("fax")
                 elif(string.upper().startswith("FAX")):
                     fax_number: str = string.split(":")[1]
                     location_object["fax"] = fax_number.strip()
