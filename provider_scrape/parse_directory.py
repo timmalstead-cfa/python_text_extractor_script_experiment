@@ -1,9 +1,9 @@
 from typing import List, Dict
-import re
 from functools import reduce
-from fitz import fitz, Document
 
-pdf: Document = fitz.open(
+from fitz import open as fopen, Document
+
+pdf: Document = fopen(
     "./current_english_directory.pdf")
 
 pdf_cat: str = ""
@@ -47,7 +47,7 @@ for page in pdf:
                 except:
                     continue
             for string in location_info:
-                if(string.startswith("PHONE") or string.startswith("Phone") or string.startswith("phone")):
+                if(string.upper().startswith("PHONE")):
                     phone_fax_info: str = string.lower()
                     if(phone_fax_info.find("fax") != -1):
                         phone_fax_arr: List[str] = phone_fax_info.split("fa")
@@ -58,18 +58,17 @@ for page in pdf:
                     else:
                         phone_fax_arr: List[str] = phone_fax_info.split(":")
                         location_object["phone"] = phone_fax_arr[1].strip()
-                elif(string.startswith("FAX") or string.startswith("Fax") or string.startswith("fax")):
+                        # string.lower().startswith("fax")
+                elif(string.upper().startswith("FAX")):
                     fax_number: str = string.split(":")[1]
                     location_object["fax"] = fax_number.strip()
                 elif(string.find(":") != -1):
                     splitter: List[str] = string.split(":")
                     location_object[splitter[0].lower().strip()
                                     ] = splitter[1].strip()
-            print(location_object)
-
-        text: str = str(location_info)
+            print(f"{location_object} \n")
+        # text: str = str(location_info)
         pdf_cat += text
-
 
 new_pdf = open("./extracted_pdf.txt", "w")
 new_pdf.write(pdf_cat)

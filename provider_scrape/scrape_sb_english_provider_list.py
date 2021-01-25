@@ -1,8 +1,8 @@
 from io import TextIOWrapper
 from datetime import datetime
 
-import requests
-import fitz
+from requests import get
+from fitz import open as fopen, Document
 
 
 def format_pdf_time(date_string: str) -> datetime:
@@ -10,8 +10,8 @@ def format_pdf_time(date_string: str) -> datetime:
 
 
 provider_directory_url: str = "http://countyofsb.org/behavioral-wellness/asset.c/6074"
-response: bytes = requests.get(provider_directory_url).content
-fetched_directory_pdf: fitz.Document = fitz.open("pdf", response)
+response: bytes = get(provider_directory_url).content
+fetched_directory_pdf: Document = fopen("pdf", response)
 
 fetched_mod_date_string: str = fetched_directory_pdf.metadata["modDate"][2:-7]
 fetched_mod_date_datetime_object: datetime = format_pdf_time(
