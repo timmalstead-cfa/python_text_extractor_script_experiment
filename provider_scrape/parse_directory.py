@@ -10,7 +10,7 @@ def find_from_word_to_word(strt_str: str, fin_str: str, lst_to_search: List) -> 
     search_index: int = [lst_to_search.index(
         string) for string in lst_to_search if string.startswith(fin_str)][0]
     search_word_cat: str = ",".join(
-        location_info[start_index:search_index]).replace(",", " ")
+        lst_to_search[start_index:search_index]).replace(",", " ")
     return search_word_cat
 
 
@@ -38,7 +38,6 @@ def extract_location_info(location_info: List) -> Dict:
             if(phone_fax_info.find("fax") != -1):
                 fax_text: str = find_from_word_to_word(
                     string, "Website", location_info)
-                # okay, something to do with the objects being structured differently. may have to construct another function only for this one
                 if(len(fax_text)):
                     phone_fax_arr: List[str] = fax_text.lower().split(
                         "fa")
@@ -86,7 +85,6 @@ def extract_location_info(location_info: List) -> Dict:
             if(len(splitter) == 2):
                 location_object[splitter[0].lower().strip().replace(" ", "_")
                                 ] = splitter[1].strip()
-    print(f"{location_object} \n")
     return location_object
 
 
@@ -121,31 +119,6 @@ for page in pdf:
         if(len(location_info)):
             final_location_arr.append(extract_location_info(location_info))
     else:
-        # splitter: str = "NPI"
-
-        # lines_split: List[str] = text.splitlines()
-        # number_of_orgs: int = sum(splitter in lines for lines in lines_split)
-
-        # print(number_of_orgs)
-
-        # arr_of_orgs: List[List[str]] = []
-        # for num in range(number_of_orgs):
-        #     for line in lines_split:
-        #         if(line.startswith(splitter)):
-        #             slice_end: int = lines_split.index(line) + 1
-        #             arr_of_orgs.append(lines_split[:slice_end])
-        #             del lines_split[:slice_end]
-
-        # while(len(lines_split)):
-        #     print(len(lines_split))
-        #     for line in lines_split:
-        #         if(line.startswith(splitter)):
-        #             slice_end: int = lines_split.index(line) + 1
-        #             arr_of_orgs.append(lines_split[:slice_end])
-        #             del lines_split[:slice_end]
-
-        # multi_org_split: List[str] = regsplit("NPI.*", text)
-
         multi_org_split: List[str] = regsplit(r"NPI.*", text)
         filter_org_split: List[str] = list(filter(
             lambda item: item, multi_org_split))
@@ -166,26 +139,13 @@ for page in pdf:
         for title in list_of_page_titles:
             if(cleaned_arrs[0][0].startswith(title)):
                 del cleaned_arrs[0][0]
-
-        # print("\n", cleaned_arrs)
+                break
 
         for cleaned_list in cleaned_arrs:
             if(len(cleaned_list)):
                 cleaned_list.append("NPI: N/A")
-                final_location_arr.append(extract_location_info(cleaned_list))
+                final_location_arr.append(
+                    extract_location_info(cleaned_list))
 
-        # print("\n", cleaned_arrs)
-
-        # for org in org_lines_split:
-        #     org_index: int = org_lines_split.index(org)
-        #     if(org[0].startswith("NPI")):
-        #         print("yes", org_index)
-
-        # for title in list_of_page_titles:
-        #     if(multi_org_split[0].startswith(title)):
-        #         multi_org_split[0].replace(title, " ")
-        #         print(multi_org_split[0])
-        #         break
-# print(final_location_arr)
 new_pdf = open("./extracted_pdf.txt", "w")
 new_pdf.write(str(final_location_arr))
