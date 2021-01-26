@@ -1,12 +1,99 @@
 from typing import List, Dict
 from functools import reduce
+from re import split as regsplit
 
 from fitz import open as fopen, Document
 
+
+def find_from_word_to_word(strt_str: str, fin_str: str, lst_to_search: List) -> str:
+    start_index: int = lst_to_search.index(strt_str)
+    search_index: int = [lst_to_search.index(
+        string) for string in lst_to_search if string.startswith(fin_str)][0]
+    search_word_cat: str = ",".join(
+        location_info[start_index:search_index]).replace(",", " ")
+    return search_word_cat
+
+
+def extract_location_info(location_info: List) -> Dict:
+    location_object: Dict = {}
+    for string in location_info:
+        try:
+            if(string.upper().startswith("PO Box")):
+                location_object["address"] = string
+            else:
+                address_index: int = location_info.index(string)
+                location_arr: List[str] = location_info[0:address_index]
+                location_string: str = reduce(
+                    lambda first_string, next_string: first_string+next_string, location_arr)
+                location_object["location_name"] = location_string.strip()
+                location_object["address"] = location_info[address_index].strip(
+                )
+                break
+        except:
+            continue
+
+    for string in location_info:
+        if(string.upper().startswith("PHONE")):
+            phone_fax_info: str = string.lower()
+            if(phone_fax_info.find("fax") != -1):
+                fax_text: str = find_from_word_to_word(
+                    string, "Website", location_info)
+                # okay, something to do with the objects being structured differently. may have to construct another function only for this one
+                if(len(fax_text)):
+                    phone_fax_arr: List[str] = fax_text.lower().split(
+                        "fa")
+                    phone_num: str = phone_fax_arr[0].split(":")[1]
+                    fax_num: str = phone_fax_arr[1].split(":")[1]
+                    location_object["phone"] = phone_num.strip()
+                    location_object["fax"] = fax_num.strip()
+            else:
+                phone_fax_arr: List[str] = phone_fax_info.split(":")
+                location_object["phone"] = phone_fax_arr[1].strip()
+        elif(string.find(":") != -1):
+            string_to_test: str = string.lower()
+
+            if(string_to_test.startswith("website")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Contact", location_info)
+            elif(string_to_test.startswith("contact")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Email", location_info)
+            elif(string_to_test.startswith("email")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Population", location_info)
+            elif(string_to_test.startswith("population")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Service", location_info)
+            elif(string_to_test.startswith("service")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Special", location_info)
+            elif(string_to_test.startswith("special")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Accept", location_info)
+            elif(string_to_test.startswith("accept")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Cultural", location_info)
+            elif(string_to_test.startswith("cultural")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "ADA", location_info)
+            elif(string_to_test.startswith("ada")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "Linguistic", location_info)
+            elif(string_to_test.startswith("linguistic")):
+                string_to_test: str = find_from_word_to_word(
+                    string, "NPI", location_info)
+            splitter: List[str] = string_to_test.split(":", 1)
+            if(len(splitter) == 2):
+                location_object[splitter[0].lower().strip().replace(" ", "_")
+                                ] = splitter[1].strip()
+    print(f"{location_object} \n")
+    return location_object
+
+
+final_location_arr: List[Dict] = []
+
 pdf: Document = fopen(
     "./current_english_directory.pdf")
-
-pdf_cat: str = ""
 
 for page in pdf:
     text: str = page.getText().strip()
@@ -15,11 +102,12 @@ for page in pdf:
     elif (text.find("TTY") != -1):
         continue
 
-    splitter_word = "RENDERING"
-    if(text.find(splitter_word) != -1):
-        location_info: List[str] = []
-        provider_info: List[str] = []
+    location_info: List[str] = []
+    provider_info: List[str] = []
 
+    splitter_word = "RENDERING"
+
+    if(text.find(splitter_word) != -1):
         page_with_table: List[str] = text.splitlines()
 
         for line in page_with_table:
@@ -31,46 +119,73 @@ for page in pdf:
                 provider_info: List[str] = page_with_table[line_splitter_index:]
 
         if(len(location_info)):
-            location_object: Dict = {}
-            for string in location_info:
-                try:
-                    if(string.upper().startswith("PO Box")):
-                        location_object["address"] = string
-                    else:
-                        first_word: str = string.split()[0]
-                        number: int = int(first_word)
-                        address_index: int = location_info.index(string)
-                        location_arr: List[str] = location_info[0:address_index]
-                        location_string: str = reduce(
-                            lambda first_string, next_string: first_string+next_string, location_arr)
-                        location_object["location_name"] = location_string.strip()
-                        location_object["address"] = location_info[address_index].strip(
-                        )
-                        break
-                except:
-                    continue
-            for string in location_info:
-                if(string.upper().startswith("PHONE")):
-                    phone_fax_info: str = string.lower()
-                    if(phone_fax_info.find("fax") != -1):
-                        phone_fax_arr: List[str] = phone_fax_info.split("fa")
-                        phone_num: str = phone_fax_arr[0].split(":")[1]
-                        fax_num: str = phone_fax_arr[1].split(":")[1]
-                        location_object["phone"] = phone_num.strip()
-                        location_object["fax"] = fax_num.strip()
-                    else:
-                        phone_fax_arr: List[str] = phone_fax_info.split(":")
-                        location_object["phone"] = phone_fax_arr[1].strip()
-                elif(string.upper().startswith("FAX")):
-                    fax_number: str = string.split(":")[1]
-                    location_object["fax"] = fax_number.strip()
-                elif(string.find(":") != -1):
-                    splitter: List[str] = string.split(":")
-                    location_object[splitter[0].lower().strip()
-                                    ] = splitter[1].strip()
-            print(f"{location_object} \n")
-        # text: str = str(location_info)
-        pdf_cat += text
+            final_location_arr.append(extract_location_info(location_info))
+    else:
+        # splitter: str = "NPI"
 
+        # lines_split: List[str] = text.splitlines()
+        # number_of_orgs: int = sum(splitter in lines for lines in lines_split)
+
+        # print(number_of_orgs)
+
+        # arr_of_orgs: List[List[str]] = []
+        # for num in range(number_of_orgs):
+        #     for line in lines_split:
+        #         if(line.startswith(splitter)):
+        #             slice_end: int = lines_split.index(line) + 1
+        #             arr_of_orgs.append(lines_split[:slice_end])
+        #             del lines_split[:slice_end]
+
+        # while(len(lines_split)):
+        #     print(len(lines_split))
+        #     for line in lines_split:
+        #         if(line.startswith(splitter)):
+        #             slice_end: int = lines_split.index(line) + 1
+        #             arr_of_orgs.append(lines_split[:slice_end])
+        #             del lines_split[:slice_end]
+
+        # multi_org_split: List[str] = regsplit("NPI.*", text)
+
+        multi_org_split: List[str] = regsplit(r"NPI.*", text)
+        filter_org_split: List[str] = list(filter(
+            lambda item: item, multi_org_split))
+
+        org_lines_split: List[List[str]] = list(map(
+            lambda string: string.split("\n"), multi_org_split))
+
+        cleaned_arrs: List[List[str]] = []
+
+        for org_info in org_lines_split:
+            cleaned_arrs.append(
+                list(filter(lambda string: string.strip() != "", org_info)))
+
+        # If there are more pages with titles, put them in list below
+        list_of_page_titles: List[str] = [
+            "PRIMARY PREVENTION", "DUI PROGRAMS", "PC 1000 PROGRAMS"]
+
+        for title in list_of_page_titles:
+            if(cleaned_arrs[0][0].startswith(title)):
+                del cleaned_arrs[0][0]
+
+        # print("\n", cleaned_arrs)
+
+        for cleaned_list in cleaned_arrs:
+            if(len(cleaned_list)):
+                cleaned_list.append("NPI: N/A")
+                final_location_arr.append(extract_location_info(cleaned_list))
+
+        # print("\n", cleaned_arrs)
+
+        # for org in org_lines_split:
+        #     org_index: int = org_lines_split.index(org)
+        #     if(org[0].startswith("NPI")):
+        #         print("yes", org_index)
+
+        # for title in list_of_page_titles:
+        #     if(multi_org_split[0].startswith(title)):
+        #         multi_org_split[0].replace(title, " ")
+        #         print(multi_org_split[0])
+        #         break
+# print(final_location_arr)
 new_pdf = open("./extracted_pdf.txt", "w")
-new_pdf.write(pdf_cat)
+new_pdf.write(str(final_location_arr))
