@@ -182,7 +182,7 @@ for page in pdf:
     location_info: List[str] = []
     provider_info: List[str] = []
 
-    splitter_word = "RENDERING"
+    splitter_word: str = "RENDERING"
 
     if(text.find(splitter_word) != -1):
         page_with_table: List[str] = text.splitlines()
