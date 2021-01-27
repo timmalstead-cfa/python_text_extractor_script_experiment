@@ -195,11 +195,23 @@ for page in pdf:
                 location_info: List[str] = page_with_table[:line_splitter_index]
                 provider_info: List[str] = page_with_table[line_splitter_index:]
 
-        if(len(location_info)):
-            final_location_arr.append(location_info_extract(location_info))
+        location_info_exists: bool = bool(len(location_info))
+        provider_info_exists: bool = bool(len(provider_info))
 
-        if(len(provider_info)):
-            final_provider_arr.append(provider_info_extract(provider_info))
+        if(location_info_exists):
+            extracted_location_info: Dict = location_info_extract(
+                location_info)
+            print(extracted_location_info, "\n\n")
+            final_location_arr.append(extracted_location_info)
+
+        if(provider_info_exists):
+            extracted_provider_info: Dict = provider_info_extract(
+                provider_info)
+            if(location_info_exists):
+                final_location_arr[-1]["location_providers"] = extracted_provider_info
+            else:
+                final_location_arr[-1]["location_providers"]["provider_list"] = [*final_location_arr[-1]
+                                                                                 ["location_providers"]["provider_list"], *extracted_provider_info["provider_list"]]
 
     else:
         multi_org_split: List[str] = regsplit(r"NPI.*", text)
@@ -230,5 +242,8 @@ for page in pdf:
                 final_location_arr.append(
                     location_info_extract(cleaned_list))
 
-new_pdf = open("./extracted_pdf.txt", "w")
-new_pdf.write(str([*final_location_arr, *final_provider_arr]))
+# new_pdf = open("./extracted_pdf.txt", "w")
+# new_pdf.write(str([*final_location_arr, *final_provider_arr]))
+
+for location in final_location_arr:
+    print("\n\n", location)
