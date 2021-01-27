@@ -5,7 +5,6 @@ from re import split as regsplit, search
 from fitz import open as fopen, Document
 
 final_location_arr: List[Dict] = []
-final_provider_arr: List[Dict] = []
 
 
 def location_string_extract_and_cat(strt_str: str, fin_str: str, lst_to_search: List) -> str:
@@ -34,13 +33,12 @@ def location_info_extract(location_info_list: List) -> Dict:
                 break
         except:
             continue
-
-    for string in location_info:
+    for string in location_info_list:
         if(string.upper().startswith("PHONE")):
             phone_fax_info: str = string.lower()
             if(phone_fax_info.find("fax") != -1):
                 fax_text: str = location_string_extract_and_cat(
-                    string, "Website", location_info)
+                    string, "Website", location_info_list)
                 if(len(fax_text)):
                     phone_fax_arr: List[str] = fax_text.lower().split(
                         "fa")
@@ -56,34 +54,34 @@ def location_info_extract(location_info_list: List) -> Dict:
 
             if(string_to_test.startswith("website")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Contact", location_info)
+                    string, "Contact", location_info_list)
             elif(string_to_test.startswith("contact")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Email", location_info)
+                    string, "Email", location_info_list)
             elif(string_to_test.startswith("email")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Population", location_info)
+                    string, "Population", location_info_list)
             elif(string_to_test.startswith("population")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Service", location_info)
+                    string, "Service", location_info_list)
             elif(string_to_test.startswith("service")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Special", location_info)
+                    string, "Special", location_info_list)
             elif(string_to_test.startswith("special")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Accept", location_info)
+                    string, "Accept", location_info_list)
             elif(string_to_test.startswith("accept")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Cultural", location_info)
+                    string, "Cultural", location_info_list)
             elif(string_to_test.startswith("cultural")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "ADA", location_info)
+                    string, "ADA", location_info_list)
             elif(string_to_test.startswith("ada")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "Linguistic", location_info)
+                    string, "Linguistic", location_info_list)
             elif(string_to_test.startswith("linguistic")):
                 string_to_test: str = location_string_extract_and_cat(
-                    string, "NPI", location_info)
+                    string, "NPI", location_info_list)
             splitter: List[str] = string_to_test.split(":", 1)
             if(len(splitter) == 2):
                 location_object[splitter[0].lower().strip().replace(" ", "_")
@@ -201,7 +199,6 @@ for page in pdf:
         if(location_info_exists):
             extracted_location_info: Dict = location_info_extract(
                 location_info)
-            print(extracted_location_info, "\n\n")
             final_location_arr.append(extracted_location_info)
 
         if(provider_info_exists):
@@ -239,11 +236,12 @@ for page in pdf:
         for cleaned_list in cleaned_arrs:
             if(len(cleaned_list)):
                 cleaned_list.append("NPI: N/A")
-                final_location_arr.append(
-                    location_info_extract(cleaned_list))
+                extracted_location_info: Dict = location_info_extract(
+                    cleaned_list)
+                final_location_arr.append(extracted_location_info)
 
 # new_pdf = open("./extracted_pdf.txt", "w")
-# new_pdf.write(str([*final_location_arr, *final_provider_arr]))
+# new_pdf.write(str(final_location_arr))
 
 for location in final_location_arr:
     print("\n\n", location)
