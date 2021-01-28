@@ -30,7 +30,6 @@ fetched_directory_is_newer: bool = fetched_mod_date_datetime_object > saved_mod_
 if(fetched_directory_is_newer):
     try:
         final_location_arr: List[Dict] = []
-        final_provider_arr: List[Dict] = []
 
         def location_string_extract_and_cat(strt_str: str, fin_str: str, lst_to_search: List) -> str:
             start_index: int = lst_to_search.index(strt_str)
@@ -57,13 +56,12 @@ if(fetched_directory_is_newer):
                         break
                 except:
                     continue
-
-            for string in location_info:
+            for string in location_info_list:
                 if(string.upper().startswith("PHONE")):
                     phone_fax_info: str = string.lower()
                     if(phone_fax_info.find("fax") != -1):
                         fax_text: str = location_string_extract_and_cat(
-                            string, "Website", location_info)
+                            string, "Website", location_info_list)
                         if(len(fax_text)):
                             phone_fax_arr: List[str] = fax_text.lower().split(
                                 "fa")
@@ -79,34 +77,34 @@ if(fetched_directory_is_newer):
 
                     if(string_to_test.startswith("website")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Contact", location_info)
+                            string, "Contact", location_info_list)
                     elif(string_to_test.startswith("contact")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Email", location_info)
+                            string, "Email", location_info_list)
                     elif(string_to_test.startswith("email")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Population", location_info)
+                            string, "Population", location_info_list)
                     elif(string_to_test.startswith("population")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Service", location_info)
+                            string, "Service", location_info_list)
                     elif(string_to_test.startswith("service")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Special", location_info)
+                            string, "Special", location_info_list)
                     elif(string_to_test.startswith("special")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Accept", location_info)
+                            string, "Accept", location_info_list)
                     elif(string_to_test.startswith("accept")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Cultural", location_info)
+                            string, "Cultural", location_info_list)
                     elif(string_to_test.startswith("cultural")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "ADA", location_info)
+                            string, "ADA", location_info_list)
                     elif(string_to_test.startswith("ada")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "Linguistic", location_info)
+                            string, "Linguistic", location_info_list)
                     elif(string_to_test.startswith("linguistic")):
                         string_to_test: str = location_string_extract_and_cat(
-                            string, "NPI", location_info)
+                            string, "NPI", location_info_list)
                     splitter: List[str] = string_to_test.split(":", 1)
                     if(len(splitter) == 2):
                         location_object[splitter[0].lower().strip().replace(" ", "_")
@@ -120,9 +118,8 @@ if(fetched_directory_is_newer):
                 search_word_cat: str = search_word_cat.replace(",", " ")
             return search_word_cat
 
-        def provider_info_extract(provider_info_list: List) -> Dict:
-            provider_info_dict: Dict = {
-                "provider_list_name": provider_info_list[0], "provider_list": []}
+        def provider_info_extract(provider_info_list: List) -> List:
+            provider_list_to_return: List[Dict] = []
 
             provider_info_arr: List[str] = list(map(
                 lambda string: string.strip(), provider_info_list[1:]))
@@ -186,9 +183,8 @@ if(fetched_directory_is_newer):
                     single_provider_info["completed_cultural_competency_training"] = provider_info_arr[train_index].lower(
                     )
 
-                    provider_info_dict["provider_list"].append(
-                        single_provider_info)
-            return provider_info_dict
+                    provider_list_to_return.append(single_provider_info)
+            return provider_list_to_return
 
         for page in fetched_directory_pdf:
             text: str = page.getText().strip()
@@ -213,13 +209,22 @@ if(fetched_directory_is_newer):
                         location_info: List[str] = page_with_table[:line_splitter_index]
                         provider_info: List[str] = page_with_table[line_splitter_index:]
 
-                if(len(location_info)):
-                    final_location_arr.append(
-                        location_info_extract(location_info))
+                location_info_exists: bool = bool(len(location_info))
+                provider_info_exists: bool = bool(len(provider_info))
 
-                if(len(provider_info)):
-                    final_provider_arr.append(
-                        provider_info_extract(provider_info))
+                if(location_info_exists):
+                    extracted_location_info: Dict = location_info_extract(
+                        location_info)
+                    final_location_arr.append(extracted_location_info)
+
+                if(provider_info_exists):
+                    extracted_provider_info: List[Dict] = provider_info_extract(
+                        provider_info)
+                    if(location_info_exists):
+                        final_location_arr[-1]["provider_list"] = extracted_provider_info
+                    else:
+                        final_location_arr[-1]["provider_list"] = [*final_location_arr[-1]
+                                                                   ["provider_list"], *extracted_provider_info]
 
             else:
                 multi_org_split: List[str] = regsplit(r"NPI.*", text)
@@ -247,14 +252,16 @@ if(fetched_directory_is_newer):
                 for cleaned_list in cleaned_arrs:
                     if(len(cleaned_list)):
                         cleaned_list.append("NPI: N/A")
-                        final_location_arr.append(
-                            location_info_extract(cleaned_list))
+                        extracted_location_info: Dict = location_info_extract(
+                            cleaned_list)
+                        final_location_arr.append(extracted_location_info)
 
         new_pdf = open("./extracted_pdf.txt", "w")
-        new_pdf.write(str([*final_location_arr, *final_provider_arr]))
+        new_pdf.write(str(final_location_arr))
 
         saved_mod_date_file: TextIOWrapper = open("./saved_mod_date.txt", "w")
         saved_mod_date_file.write(fetched_mod_date_string)
+
     except Exception as error:
         # If this is done as a cron job, I would see this error handling as emailing the error to whomever is in charge of maintaining the scraper
         print(
