@@ -97,9 +97,8 @@ def provider_string_extract_and_cat(starting_index: int, end_index: int, arr_to_
     return search_word_cat
 
 
-def provider_info_extract(provider_info_list: List) -> Dict:
-    provider_info_dict: Dict = {
-        "provider_list_name": provider_info_list[0], "provider_list": []}
+def provider_info_extract(provider_info_list: List) -> List:
+    provider_list_to_return: List[Dict] = []
 
     provider_info_arr: List[str] = list(map(
         lambda string: string.strip(), provider_info_list[1:]))
@@ -163,8 +162,8 @@ def provider_info_extract(provider_info_list: List) -> Dict:
             single_provider_info["completed_cultural_competency_training"] = provider_info_arr[train_index].lower(
             )
 
-            provider_info_dict["provider_list"].append(single_provider_info)
-    return provider_info_dict
+            provider_list_to_return.append(single_provider_info)
+    return provider_list_to_return
 
 
 pdf: Document = fopen(
@@ -202,13 +201,13 @@ for page in pdf:
             final_location_arr.append(extracted_location_info)
 
         if(provider_info_exists):
-            extracted_provider_info: Dict = provider_info_extract(
+            extracted_provider_info: List[Dict] = provider_info_extract(
                 provider_info)
             if(location_info_exists):
-                final_location_arr[-1]["location_providers"] = extracted_provider_info
+                final_location_arr[-1]["provider_list"] = extracted_provider_info
             else:
-                final_location_arr[-1]["location_providers"]["provider_list"] = [*final_location_arr[-1]
-                                                                                 ["location_providers"]["provider_list"], *extracted_provider_info["provider_list"]]
+                final_location_arr[-1]["provider_list"] = [*final_location_arr[-1]
+                                                           ["provider_list"], *extracted_provider_info]
 
     else:
         multi_org_split: List[str] = regsplit(r"NPI.*", text)
@@ -240,8 +239,5 @@ for page in pdf:
                     cleaned_list)
                 final_location_arr.append(extracted_location_info)
 
-# new_pdf = open("./extracted_pdf.txt", "w")
-# new_pdf.write(str(final_location_arr))
-
-for location in final_location_arr:
-    print("\n\n", location)
+new_pdf = open("./extracted_pdf.txt", "w")
+new_pdf.write(str(final_location_arr))
