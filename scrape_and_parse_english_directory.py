@@ -277,6 +277,9 @@ try:
                     "./saved_mod_date.txt", "w")
                 saved_mod_date_file.write(fetched_mod_date_string)
 
+                for location in final_location_arr:
+                    print(location, "\n")
+
             except Exception as error:
                 # If this is done as a cron job, I would see this error handling as emailing the error to whomever is in charge of maintaining the scraper
                 print(
@@ -285,7 +288,7 @@ try:
             print("There is no new directory")
     else:
         print(
-            f"Fetching PDF was not successful. Requesred returned #{response} instead.")
+            f"Fetching PDF was not successful. Request returned #{response} instead.")
 except Exception as error:
     print(
-        f"Oh no, #{error.__class__} has occured while trying to fetch the PDF.")
+        f"Oh no, #{error.__class__} has occured while trying to fetch and validate the PDF.")
