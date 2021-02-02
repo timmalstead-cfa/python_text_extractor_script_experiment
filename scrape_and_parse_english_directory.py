@@ -1,26 +1,35 @@
+# Standard library imports
 from io import TextIOWrapper
 from typing import List, Dict
 from datetime import datetime
 from functools import reduce
 from re import split as regsplit, search
 
+# Third party library imports
 from requests import get, Response
 from fitz import open as fopen, Document
 
 
 def format_pdf_time(date_string: str) -> datetime:
+    # Returns a datetime object from a string formatted by Year,Month,Date,Hour,Minute,Second
     return datetime.strptime(date_string, "%Y%m%d%H%M%S")
 
 
+# Script attempts to hit pdf url
 try:
     provider_directory_url: str = "http://countyofsb.org/behavioral-wellness/asset.c/6074"
     response: Response = get(provider_directory_url)
     successful_response: str = "<Response [200]>"
+    # If response is sucessful, script continues
     if(str(response) == successful_response):
+        # Upon sucessful response, PDF content is returned as a stream of bytes
         response_content: bytes = response.content
+        # Fitz library opens up byte stream to parse as PDF pages
         fetched_directory_pdf: Document = fopen("pdf", response_content)
 
+        # Checks metadata string on fetched PDF to see last time it was modified
         fetched_mod_date_string: str = fetched_directory_pdf.metadata["modDate"][2:-7]
+        # Converts metadata string to datetime object that Python can perform numerical operations with
         fetched_mod_date_datetime_object: datetime = format_pdf_time(
             fetched_mod_date_string)
 
@@ -29,12 +38,14 @@ try:
         saved_mod_date_datetime_object: datetime = format_pdf_time(
             saved_mod_date_file.read())
 
+        # Compares newly fetched date to saved date. If newly fetched date is greater, meaning newer, this value reads as True. Else False
         fetched_directory_is_newer: bool = fetched_mod_date_datetime_object > saved_mod_date_datetime_object
 
         if(fetched_directory_is_newer):
             try:
                 final_location_arr: List[Dict] = []
 
+                # Function to extract and concatenate text, searching by starting string to finishing string
                 def location_string_extract_and_cat(strt_str: str, fin_str: str, lst_to_search: List) -> str:
                     start_index: int = lst_to_search.index(strt_str)
                     search_index: int = [lst_to_search.index(
@@ -43,6 +54,7 @@ try:
                         lst_to_search[start_index:search_index]).replace(",", " ")
                     return search_word_cat
 
+                # Returns location info from pages that have it
                 def location_info_extract(location_info_list: List) -> Dict:
                     location_object: Dict = {}
                     for string in location_info_list:
@@ -122,6 +134,7 @@ try:
                                                 ] = splitter[1].strip()
                     return location_object
 
+                # Provides provider info from provider tables. Unlike previous extract and cat function, it searches by a provided list index, not by word
                 def provider_string_extract_and_cat(starting_index: int, end_index: int, arr_to_search: List, cat: Dict = {"concat": True}) -> str:
                     search_word_cat: str = ",".join(
                         arr_to_search[starting_index:end_index])
@@ -199,6 +212,7 @@ try:
                                 single_provider_info)
                     return provider_list_to_return
 
+                # Loops through fetched document, page by page
                 for page in fetched_directory_pdf:
                     text: str = page.getText().strip()
                     if(text.startswith("SUBSTANCE USE DISORDER")):
@@ -283,12 +297,16 @@ try:
             except Exception as error:
                 # If this is done as a cron job, I would see this error handling as emailing the error to whomever is in charge of maintaining the scraper
                 print(
+                    # Prints errors raised when attempting to parse text
                     f"Uh oh, #{error.__class__} occured when attempting to parse the text.")
         else:
+            # If the date modified is less than or equal to the saved date, below prints
             print("There is no new directory")
     else:
+        # If response is not 200, response printed
         print(
             f"Fetching PDF was not successful. Request returned #{response} instead.")
+# Script throws error if there is a problem fetching PDF
 except Exception as error:
     print(
         f"Oh no, #{error.__class__} has occured while trying to fetch and validate the PDF.")
